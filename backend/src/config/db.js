@@ -1,6 +1,11 @@
 import pg from 'pg';
 import { env } from './env.js';
 
+// PostgreSQL devuelve BIGINT como string para no perder precision en JS,
+// pero nuestros IDs caben perfecto en Number. Forzamos a entero para que
+// el JSON salga limpio (`"id": 1` y no `"id": "1"`).
+pg.types.setTypeParser(20, (val) => parseInt(val, 10));
+
 /**
  * Pool unico reutilizado en toda la app.
  *
