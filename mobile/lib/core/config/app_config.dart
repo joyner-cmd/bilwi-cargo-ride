@@ -1,15 +1,12 @@
 /// Configuracion central de la app.
 ///
-/// IMPORTANTE: para probar en un telefono fisico, cambia [apiHost] por la IP
-/// local de tu PC (ej. 192.168.1.10). En el emulador de Android usa 10.0.2.2.
-/// Averigua tu IP con `ipconfig` (Windows) -> "Direccion IPv4".
+/// El backend vive en Railway (sin dependencia de PC o IP local).
+/// La app funciona en cualquier red, cualquier telefono.
 class AppConfig {
-  // Cambia esto a la IP de tu PC para pruebas reales en celular.
-  static const String apiHost = '10.0.2.2';
-  static const int apiPort = 4000;
-
-  static const String apiBaseUrl = 'http://$apiHost:$apiPort/api';
-  static const String socketUrl = 'http://$apiHost:$apiPort';
+  static const String apiBaseUrl =
+      'https://bilwi-cargo-ride-production.up.railway.app/api';
+  static const String socketUrl =
+      'https://bilwi-cargo-ride-production.up.railway.app';
 
   // Centro aproximado de Bilwi (Puerto Cabezas).
   static const double bilwiLat = 14.0270;

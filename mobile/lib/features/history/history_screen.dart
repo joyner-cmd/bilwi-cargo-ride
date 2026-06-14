@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/di/services.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/format.dart';
 import '../../data/models/trip.dart';
 import '../trip/trip_tracking_screen.dart';
@@ -44,51 +44,139 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Historial')),
+      backgroundColor: AppColors.arena,
+      appBar: AppBar(
+        title: const Text('Tus viajes'),
+        backgroundColor: AppColors.arena,
+        scrolledUnderElevation: 0,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _trips.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Text('Aun no tienes viajes. Solicita el primero!',
-                        textAlign: TextAlign.center),
-                  ),
-                )
+              ? _empty()
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                     itemCount: _trips.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, i) => _tile(_trips[i]),
                   ),
                 ),
     );
   }
 
-  Widget _tile(Trip t) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.verdeAgua.withValues(alpha: .4),
-          child: Icon(_iconForStatus(t.status), color: AppColors.azulCaribe),
-        ),
-        title: Text(t.serviceName, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          '${Trip.statusLabel(t.status)} • ${km(t.distanceKm)}',
-          style: const TextStyle(fontSize: 12.5),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+  Widget _empty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(money(t.fareFinal ?? t.fareEstimated),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Container(
+              width: 84,
+              height: 84,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.verdeMenta,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(Icons.directions_car_filled_outlined,
+                  size: 40, color: AppColors.azulCaribe),
+            ),
+            const SizedBox(height: 16),
+            const Text('Aun no tienes viajes',
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.azulNoche)),
+            const SizedBox(height: 4),
+            const Text(
+                'Cuando solicites tu primer viaje aparecera aqui tu historial.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.grisTexto)),
           ],
         ),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => TripTrackingScreen(tripId: t.id))),
+      ),
+    );
+  }
+
+  Widget _tile(Trip t) {
+    final color = t.status == 'completed'
+        ? AppColors.exito
+        : t.status == 'cancelled'
+            ? AppColors.alerta
+            : AppColors.advertencia;
+    final bg = t.status == 'completed'
+        ? AppColors.exitoSuave
+        : t.status == 'cancelled'
+            ? AppColors.alertaSuave
+            : const Color(0xFFFFF8E1);
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => TripTrackingScreen(tripId: t.id))),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.borde),
+          boxShadow: AppShadows.sutil,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.verdeMenta,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(_iconForStatus(t.status),
+                  color: AppColors.azulCaribe, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.serviceName,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.azulNoche)),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(Trip.statusLabel(t.status),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: color)),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(money(t.fareFinal ?? t.fareEstimated),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.azulNoche)),
+                Text(km(t.distanceKm),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.grisSuave)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -104,7 +192,3 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 }
-
-// Mantengo el import de intl por si se quiere mostrar fecha luego.
-// ignore: unused_element
-String _fmtDate(DateTime d) => DateFormat('dd MMM, HH:mm', 'es').format(d);

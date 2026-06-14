@@ -1,53 +1,24 @@
-# Bilwi Cargo & Ride — Guía rápida para instalarla y usarla
+# Bilwi Cargo & Ride — Instalar y usar
 
-## 1. APK listo
+## 🎯 Versión final (cloud)
 
-El archivo está aquí:
+El APK ya está conectado al servidor en **Railway**. No depende de tu PC, no
+hay IP que cambiar, no hay backend que arrancar. Solo instálalo y úsalo.
 
-**`dist/BilwiCargoRide-v1.0.0.apk`** (~24 MB)
+**APK:** `dist/BilwiCargoRide-v1.0.1-cloud.apk` (~24 MB)
+**API pública:** https://bilwi-cargo-ride-production.up.railway.app
+**Repo:** https://github.com/joyner-cmd/bilwi-cargo-ride
 
-## 2. Cómo instalarlo en el teléfono
+## 📲 Cómo instalarlo
 
-1. Copia el archivo al teléfono (USB, WhatsApp, Drive, etc.).
-2. En el teléfono, ábrelo. Android pedirá permiso "Instalar de fuentes desconocidas" → **Permitir**.
-3. Toca **Instalar**. Listo: aparece el ícono **Bilwi Cargo & Ride**.
+1. Copia `BilwiCargoRide-v1.0.1-cloud.apk` al teléfono (USB, WhatsApp, Drive).
+2. Ábrelo en el teléfono. Android pide permiso "Instalar de fuentes desconocidas" → **Permitir**.
+3. Toca **Instalar**.
+4. Aparece el ícono **Bilwi Cargo & Ride** → ábrelo.
 
-> Si Play Protect avisa porque no está firmado con cuenta de Google Play, toca **Instalar de todos modos**. (En la fase MVP es normal; al subirlo a Play Store esto desaparece.)
+> Si Play Protect avisa "no se reconoce", toca **Instalar de todos modos**. Es normal porque el APK no pasó por Play Store (puedes subirlo cuando quieras).
 
-## 3. Arrancar el backend
-
-El backend debe estar corriendo en tu PC para que la app funcione (es el "cerebro").
-
-```powershell
-cd bilwi-cargo-ride\backend
-npm start
-```
-
-El servidor escucha en `http://localhost:4000`. El comando `npm run db:setup` ya se ejecutó: la base de datos y las cuentas demo están listas.
-
-## 4. Decirle a la app dónde está tu backend
-
-La app y el backend tienen que hablar por la **misma red WiFi**. Hay dos casos:
-
-### A. Emulador Android (en tu misma PC)
-El código ya viene listo: usa `10.0.2.2:4000` (alias del emulador para "tu PC").
-
-### B. Teléfono físico (WiFi)
-1. En tu PC, abre PowerShell y corre `ipconfig`. Busca tu **"Dirección IPv4"** (algo como `192.168.1.10`).
-2. Edita `mobile/lib/core/config/app_config.dart` y cambia:
-   ```dart
-   static const String apiHost = '192.168.1.10';   // <- tu IP
-   ```
-3. Recompila el APK:
-   ```powershell
-   cd mobile
-   flutter build apk --release
-   ```
-4. El nuevo APK queda en `mobile/build/app/outputs/flutter-apk/app-release.apk`.
-
-> Necesario: tu PC y tu teléfono en **la misma WiFi**, y el firewall debe permitir el puerto 4000 (Windows lo pregunta la primera vez).
-
-## 5. Cuentas demo (ya creadas)
+## 👤 Cuentas demo
 
 | Rol       | Teléfono       | Contraseña |
 |-----------|----------------|------------|
@@ -55,23 +26,50 @@ El código ya viene listo: usa `10.0.2.2:4000` (alias del emulador para "tu PC")
 | Conductor | `+50588880002` | `demo1234` |
 | Admin     | `+50588880000` | `demo1234` |
 
-En la pantalla de login hay 2 chips: "Cliente" y "Conductor" que rellenan los datos automáticamente.
+En la pantalla de login hay 2 chips: **"Cliente"** y **"Conductor"** que rellenan los datos solos.
 
-## 6. Probar el flujo completo (te toma 2 minutos)
+## 🚀 Probar el flujo
 
-1. Entra como **Conductor** en un teléfono/emulador — activa la disponibilidad.
-2. En otro dispositivo (o cierra sesión y entra como **Cliente**):
+1. Instala el APK en **dos teléfonos** (o en un teléfono + un emulador).
+2. En uno, entra como **Conductor** → activa el switch **"Disponible para viajes"**.
+3. En el otro, entra como **Cliente**:
    - Toca el mapa para marcar tu **destino**.
-   - Elige un servicio (ride, acarreo, mudanza, etc.).
-   - Verás la cotización (distancia, tiempo, tarifa C$).
+   - Elige un servicio (Carrera, Acarreo, Mudanza, etc.).
+   - Verás cotización (distancia, tiempo, tarifa C$).
    - Toca **Solicitar**.
-3. El **Conductor** recibe la solicitud en tiempo real → la **Acepta**.
-4. Avanza: **Llegó → Iniciar → Finalizar**.
-5. El **Cliente** puede chatear durante el viaje y al final califica.
+4. El **Conductor** recibe la solicitud → la **Acepta**.
+5. Avanza: **Llegó → Iniciar → Finalizar**.
+6. Chatea durante el viaje, califica al final.
 
-## 7. ¿Qué hay dentro?
+## 🔄 Si quieres recompilar el APK
 
-- `backend/` — API REST + WebSockets (Node/Express/PostgreSQL). Verificado end-to-end.
-- `mobile/` — App Flutter Material 3 (cliente + conductor, mapa OSM, chat, SOS, calificación).
-- `dist/` — APK listo para instalar.
-- `docs/` — Manuales técnico/usuario, arquitectura, monetización.
+```powershell
+cd "C:\Users\joyne\OneDrive\Escritorio\Proyectos Joy\Jenny\bilwi-cargo-ride\mobile"
+flutter build apk --release
+```
+
+El nuevo APK queda en `mobile\build\app\outputs\flutter-apk\app-release.apk`.
+
+## 🛠️ Si quieres seguir desarrollando
+
+- Cualquier cambio que hagas en el **backend** + `git push` → Railway redeploya **solo** en ~2 min.
+- Cualquier cambio que hagas en la **app** → `flutter build apk --release` y reinstalas el APK.
+
+## 📊 Monitoreo
+
+- **Logs del servidor en vivo:** Railway dashboard → proyecto `dependable-rejoicing` → servicio `bilwi-cargo-ride` → pestaña **"Deployments"** → click en el deploy activo → **"Deploy Logs"**.
+- **Base de datos:** Railway dashboard → servicio `Postgres` → pestaña **"Data"** (Railway tiene un editor visual de tablas).
+- **Métricas admin:** entra a la app como admin (`+50588880000`) — *(la UI de admin web queda como fase 2; por ahora puedes probar el endpoint con curl: `GET /api/admin/metrics` con header `Authorization: Bearer <token>`)*.
+
+---
+
+## ¿Qué hay en el proyecto?
+
+```
+bilwi-cargo-ride/
+├── backend/        # API REST + WebSockets (Node + Express + PostgreSQL)
+├── mobile/         # App Flutter Material 3 (cliente + conductor)
+├── docs/           # Arquitectura, API, manuales, monetización
+├── dist/           # APK listo para instalar
+└── INSTALAR.md     # Este archivo
+```
