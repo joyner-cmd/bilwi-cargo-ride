@@ -1,0 +1,43 @@
+name: bilwi_cargo
+description: "Bilwi Cargo & Ride - transporte y acarreos para Bilwi."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Estado
+  provider: ^6.1.2
+
+  # Red
+  dio: ^5.7.0
+  socket_io_client: ^2.0.3+1
+
+  # Mapas (OpenStreetMap)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # GPS
+  geolocator: ^13.0.1
+
+  # Almacenamiento local / cache (modo bajo consumo)
+  shared_preferences: ^2.3.2
+  cached_network_image: ^3.4.1
+
+  # Utilidades
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
