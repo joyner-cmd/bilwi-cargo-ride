@@ -10,8 +10,8 @@ class DriverRepository {
   }
 
   Future<bool> setAvailability(bool available) async {
-    final res = await _api.dio.patch('/drivers/me/availability',
-        data: {'available': available});
+    final res = await _api.dio
+        .patch('/drivers/me/availability', data: {'available': available});
     return res.data['is_available'] == true;
   }
 
@@ -24,7 +24,18 @@ class DriverRepository {
     return (res.data['vehicles'] as List).cast<Map<String, dynamic>>();
   }
 
-  Future<void> addVehicle(Map<String, dynamic> data) async {
-    await _api.dio.post('/vehicles', data: data);
+  Future<Map<String, dynamic>> addVehicle(Map<String, dynamic> data) async {
+    final res = await _api.dio.post('/vehicles', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> updateVehicle(
+      int id, Map<String, dynamic> data) async {
+    final res = await _api.dio.patch('/vehicles/$id', data: data);
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> deleteVehicle(int id) async {
+    await _api.dio.delete('/vehicles/$id');
   }
 }

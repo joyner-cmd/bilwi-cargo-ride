@@ -6,6 +6,7 @@ import '../../data/repositories/catalog_repository.dart';
 import '../../data/repositories/trips_repository.dart';
 import '../../data/repositories/driver_repository.dart';
 import '../../data/repositories/messages_repository.dart';
+import '../../data/repositories/uploads_repository.dart';
 
 /// Contenedor simple de dependencias (DI manual, sin frameworks).
 class Services {
@@ -14,7 +15,8 @@ class Services {
         catalog = CatalogRepository(api, store),
         trips = TripsRepository(api),
         driver = DriverRepository(api),
-        messages = MessagesRepository(api);
+        messages = MessagesRepository(api),
+        uploads = UploadsRepository(api);
 
   final ApiClient api;
   final LocalStore store;
@@ -25,6 +27,7 @@ class Services {
   final TripsRepository trips;
   final DriverRepository driver;
   final MessagesRepository messages;
+  final UploadsRepository uploads;
 
   static Future<Services> init() async {
     final api = ApiClient();

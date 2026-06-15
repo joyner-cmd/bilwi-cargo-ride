@@ -19,6 +19,7 @@ import '../common/stat_tile.dart';
 import '../history/history_screen.dart';
 import '../profile/profile_screen.dart';
 import '../trip/trip_tracking_screen.dart';
+import 'my_vehicles_screen.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -236,6 +237,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               ],
             ),
           ),
+          _headerButton(
+            icon: Icons.local_shipping_outlined,
+            onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const MyVehiclesScreen())),
+          ),
+          const SizedBox(width: 8),
           _headerButton(
             icon: Icons.receipt_long_outlined,
             onTap: () => Navigator.of(context).push(

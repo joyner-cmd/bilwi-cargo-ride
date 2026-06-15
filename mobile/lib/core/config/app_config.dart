@@ -17,4 +17,15 @@ class AppConfig {
   static const String mapUserAgent = 'ni.bilwicargo.bilwi_cargo';
 
   static const String currency = 'C\$';
+
+  /// Convierte un path relativo (devuelto por el backend, ej. `/api/uploads/12`)
+  /// en una URL absoluta. Si ya es absoluta, la devuelve sin cambios.
+  static String? fullUrl(String? pathOrUrl) {
+    if (pathOrUrl == null || pathOrUrl.isEmpty) return null;
+    if (pathOrUrl.startsWith('http')) return pathOrUrl;
+    // apiBaseUrl termina en `/api`. Para `/api/uploads/12` quitamos el `/api`
+    // y agregamos el path para evitar duplicado.
+    final origin = apiBaseUrl.replaceFirst(RegExp(r'/api/?$'), '');
+    return origin + (pathOrUrl.startsWith('/') ? pathOrUrl : '/$pathOrUrl');
+  }
 }

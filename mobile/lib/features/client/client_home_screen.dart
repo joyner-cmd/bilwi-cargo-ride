@@ -27,7 +27,13 @@ class ClientHomeScreen extends StatefulWidget {
 
 class _ClientHomeScreenState extends State<ClientHomeScreen> {
   final _map = MapController();
+  final _sheet = DraggableScrollableController();
   late final Services _s;
+
+  // Snap points: minimo (mapa completo), medio (servicios), maximo (cotizacion).
+  static const double _minSize = 0.14;
+  static const double _midSize = 0.42;
+  static const double _maxSize = 0.72;
 
   LatLng _origin = const LatLng(AppConfig.bilwiLat, AppConfig.bilwiLng);
   LatLng? _dest;
@@ -43,6 +49,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     super.initState();
     _s = context.read<Services>();
     _init();
+  }
+
+  @override
+  void dispose() {
+    _sheet.dispose();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -68,7 +80,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         vehicleType: _selected?.vehicleType,
       );
       if (mounted) setState(() {});
-    } catch (_) {/* sin red, el mapa sigue usable */}
+    } catch (_) {}
   }
 
   Future<void> _getQuote() async {
@@ -124,6 +136,23 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     });
     _loadNearby();
     if (_dest != null) _getQuote();
+    // Al elegir servicio expande el panel para ver bien la opcion.
+    _animateSheetTo(_quote != null ? _maxSize : _midSize);
+  }
+
+  void _onMapTap(LatLng p) {
+    setState(() {
+      _dest = p;
+      _quote = null;
+    });
+    _getQuote().then((_) {
+      if (_quote != null) _animateSheetTo(_maxSize);
+    });
+  }
+
+  void _animateSheetTo(double size) {
+    _sheet.animateTo(size,
+        duration: const Duration(milliseconds: 240), curve: Curves.easeOut);
   }
 
   @override
@@ -138,12 +167,93 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               children: [
                 Positioned.fill(child: _buildMap()),
                 _topGreeting(firstName),
-                _bottomPanel(),
+                _draggableSheet(),
               ],
             ),
     );
   }
 
+  // ---------- Mapa ----------
+  Widget _buildMap() {
+    return FlutterMap(
+      mapController: _map,
+      options: MapOptions(
+        initialCenter: _origin,
+        initialZoom: 14.5,
+        onTap: (_, p) => _onMapTap(p),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: AppConfig.mapTileUrl,
+          userAgentPackageName: AppConfig.mapUserAgent,
+        ),
+        if (_dest != null)
+          PolylineLayer(polylines: [
+            Polyline(
+              points: [_origin, _dest!],
+              strokeWidth: 4,
+              color: AppColors.azulCaribe.withValues(alpha: .55),
+            ),
+          ]),
+        MarkerLayer(markers: [
+          Marker(point: _origin, width: 46, height: 46, child: _originPin()),
+          if (_dest != null)
+            Marker(
+              point: _dest!,
+              width: 46,
+              height: 60,
+              alignment: Alignment.topCenter,
+              child: const Icon(Icons.location_on,
+                  color: AppColors.alerta, size: 44),
+            ),
+          ..._drivers.map((d) => Marker(
+                point: LatLng(d.lat, d.lng),
+                width: 42,
+                height: 42,
+                child: _driverPin(),
+              )),
+        ]),
+      ],
+    );
+  }
+
+  Widget _originPin() => Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.azulCaribe.withValues(alpha: .18),
+              shape: BoxShape.circle,
+            ),
+          ),
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.azulCaribe, width: 3),
+            ),
+          ),
+        ],
+      );
+
+  Widget _driverPin() => Container(
+        decoration: BoxDecoration(
+          color: AppColors.exito,
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 2))
+          ],
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: const Icon(Icons.local_taxi, color: Colors.white, size: 20),
+      );
+
+  // ---------- Top greeting + GPS ----------
   Widget _topGreeting(String firstName) {
     return SafeArea(
       child: Padding(
@@ -151,7 +261,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
@@ -189,7 +300,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     );
   }
 
-  Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _circleButton(
+      {required IconData icon, required VoidCallback onTap}) {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(14),
@@ -209,190 +321,130 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     );
   }
 
-  Widget _buildMap() {
-    return FlutterMap(
-      mapController: _map,
-      options: MapOptions(
-        initialCenter: _origin,
-        initialZoom: 14.5,
-        onTap: (_, p) {
-          setState(() {
-            _dest = p;
-            _quote = null;
-          });
-          _getQuote();
-        },
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: AppConfig.mapTileUrl,
-          userAgentPackageName: AppConfig.mapUserAgent,
-        ),
-        if (_dest != null)
-          PolylineLayer(polylines: [
-            Polyline(
-              points: [_origin, _dest!],
-              strokeWidth: 4,
-              color: AppColors.azulCaribe.withValues(alpha: .55),
-            ),
-          ]),
-        MarkerLayer(markers: [
-          Marker(
-            point: _origin,
-            width: 46,
-            height: 46,
-            child: _originPin(),
-          ),
-          if (_dest != null)
-            Marker(
-              point: _dest!,
-              width: 46,
-              height: 60,
-              alignment: Alignment.topCenter,
-              child: const Icon(Icons.location_on,
-                  color: AppColors.alerta, size: 44),
-            ),
-          ..._drivers.map((d) => Marker(
-                point: LatLng(d.lat, d.lng),
-                width: 42,
-                height: 42,
-                child: _driverPin(),
-              )),
-        ]),
-      ],
-    );
-  }
-
-  Widget _originPin() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: AppColors.azulCaribe.withValues(alpha: .18),
-            shape: BoxShape.circle,
-          ),
-        ),
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
+  // ---------- Draggable bottom sheet ----------
+  Widget _draggableSheet() {
+    return DraggableScrollableSheet(
+      controller: _sheet,
+      initialChildSize: _midSize,
+      minChildSize: _minSize,
+      maxChildSize: _maxSize,
+      snap: true,
+      snapSizes: const [_minSize, _midSize, _maxSize],
+      builder: (ctx, scrollCtrl) {
+        return Container(
+          decoration: const BoxDecoration(
             color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.azulCaribe, width: 3),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: AppShadows.elevada,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _driverPin() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.exito,
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 2))
-        ],
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: const Icon(Icons.local_taxi, color: Colors.white, size: 20),
-    );
-  }
-
-  Widget _bottomPanel() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: AppShadows.elevada,
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            controller: scrollCtrl,
+            padding: EdgeInsets.zero,
             children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.borde,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+              _handle(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text('¿A donde vamos?',
+                              style: TextStyle(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.azulNoche)),
+                        ),
+                        _liveBadge(),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _dest == null
+                          ? 'Toca el mapa para marcar tu destino'
+                          : '${_drivers.length} conductor(es) cerca de ti',
+                      style: const TextStyle(
+                          fontSize: 12.5, color: AppColors.grisTexto),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 178,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        itemCount: _services.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (_, i) {
+                          final s = _services[i];
+                          return ServiceHeroCard(
+                            service: s,
+                            selected: _selected?.id == s.id,
+                            fromPrice: money(s.minFare),
+                            onTap: () => _onSelectService(s),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    if (_quote != null) _quoteChips(),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed:
+                            (_dest == null || _requesting) ? null : _request,
+                        icon: _requesting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.send_rounded),
+                        label: Text(
+                          _dest == null
+                              ? 'Marca tu destino en el mapa'
+                              : _quote == null
+                                  ? 'Solicitar ${_selected?.name ?? ''}'
+                                  : 'Solicitar • ${money(_quote!.fareEstimated)}',
+                          style: const TextStyle(letterSpacing: 0.3),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 80),
+                  ],
                 ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text('¿A donde vamos?',
-                        style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.azulNoche)),
-                  ),
-                  _liveBadge(),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _dest == null
-                    ? 'Toca el mapa para marcar tu destino'
-                    : '${_drivers.length} conductor(es) cerca de ti',
-                style: const TextStyle(
-                    fontSize: 12.5, color: AppColors.grisTexto),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 178,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _services.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, i) {
-                    final s = _services[i];
-                    return ServiceHeroCard(
-                      service: s,
-                      selected: _selected?.id == s.id,
-                      fromPrice: money(s.minFare),
-                      onTap: () => _onSelectService(s),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 14),
-              if (_quote != null) _quoteChips(),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: (_dest == null || _requesting) ? null : _request,
-                  icon: _requesting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.send_rounded),
-                  label: Text(
-                    _dest == null
-                        ? 'Marca tu destino en el mapa'
-                        : _quote == null
-                            ? 'Solicitar ${_selected?.name ?? ''}'
-                            : 'Solicitar • ${money(_quote!.fareEstimated)}',
-                    style: const TextStyle(letterSpacing: 0.3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 70), // espacio para el bottom nav
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _handle() {
+    return GestureDetector(
+      onTap: () {
+        // Cicla entre los 3 snap points al tocar el handle.
+        final cur = _sheet.size;
+        final next = (cur - _minSize).abs() < 0.05
+            ? _midSize
+            : (cur - _midSize).abs() < 0.05
+                ? _maxSize
+                : _minSize;
+        _animateSheetTo(next);
+      },
+      child: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.only(top: 10, bottom: 6),
+        child: Center(
+          child: Container(
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.borde,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
       ),

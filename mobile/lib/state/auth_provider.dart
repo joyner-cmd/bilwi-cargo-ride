@@ -43,6 +43,13 @@ class AuthProvider extends ChangeNotifier {
     await _persist(res.user, res.token);
   }
 
+  /// Reemplaza el usuario en memoria + cache (despues de editar perfil).
+  Future<void> updateUserLocal(AppUser u) async {
+    _user = u;
+    await _services.store.setUserJson(jsonEncode(u.toJson()));
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     _services.socket.dispose();
     await _services.store.clearSession();

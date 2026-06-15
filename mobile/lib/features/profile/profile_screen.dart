@@ -5,6 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../state/auth_provider.dart';
 import '../auth/login_screen.dart';
+import '../common/photo_avatar.dart';
+import '../driver/my_vehicles_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -20,8 +23,8 @@ class ProfileScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
               children: [
-                _hero(user.fullName, user.isDriver, user.ratingAvg,
-                    user.ratingCount),
+                _hero(user.photoUrl, user.fullName, user.isDriver,
+                    user.ratingAvg, user.ratingCount),
                 Transform.translate(
                   offset: const Offset(0, -28),
                   child: Padding(
@@ -29,16 +32,37 @@ class ProfileScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _infoCard([
-                          _row(Icons.phone, 'Telefono', user.phone),
+                          _actionRow(
+                              icon: Icons.edit_outlined,
+                              title: 'Editar perfil',
+                              subtitle: 'Cambia tu foto, nombre o correo',
+                              onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const EditProfileScreen()))),
+                          if (user.isDriver)
+                            _actionRow(
+                                icon: Icons.local_shipping_outlined,
+                                title: 'Mis vehiculos',
+                                subtitle:
+                                    'Registra tus vehiculos y servicios',
+                                onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const MyVehiclesScreen()))),
+                          _row(Icons.phone, 'Telefono', user.phone,
+                              showDivider: true),
                           _row(Icons.email, 'Correo',
-                              user.email ?? 'Sin correo'),
+                              user.email ?? 'Sin correo',
+                              showDivider: false),
                         ]),
                         const SizedBox(height: 14),
                         _infoCard([
                           _actionRow(
                               icon: Icons.shield_outlined,
                               title: 'Seguridad y SOS',
-                              subtitle: 'Boton de emergencia disponible en viaje',
+                              subtitle:
+                                  'Boton de emergencia disponible en viaje',
                               onTap: () {}),
                           _actionRow(
                               icon: Icons.help_outline,
@@ -48,7 +72,7 @@ class ProfileScreen extends StatelessWidget {
                           _actionRow(
                               icon: Icons.info_outline,
                               title: 'Acerca de',
-                              subtitle: 'Version 1.0',
+                              subtitle: 'Version 1.0.4',
                               onTap: () {},
                               showDivider: false),
                         ]),
@@ -85,7 +109,9 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _hero(String name, bool isDriver, double rating, int count) {
+  Widget _hero(String? photoUrl, String name, bool isDriver, double rating,
+      int count) {
+    final initial = name.isNotEmpty ? name[0] : '?';
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 56, 20, 56),
       decoration: const BoxDecoration(
@@ -95,20 +121,18 @@ class ProfileScreen extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 88,
-            height: 88,
-            alignment: Alignment.center,
+            width: 96,
+            height: 96,
+            padding: const EdgeInsets.all(3),
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: AppShadows.elevada,
             ),
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.azulNoche),
+            child: PhotoAvatar(
+              photoUrl: photoUrl,
+              fallbackInitial: initial,
+              size: 90,
             ),
           ),
           const SizedBox(height: 12),
@@ -161,38 +185,46 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _row(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.verdeMenta,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.azulCaribe, size: 18),
+  Widget _row(IconData icon, String label, String value,
+      {bool showDivider = false}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.verdeMenta,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: AppColors.azulCaribe, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.grisSuave)),
+                    Text(value,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.azulNoche)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.grisSuave)),
-                Text(value,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.azulNoche)),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+        if (showDivider)
+          const Divider(
+              height: 1, color: AppColors.borde, indent: 14, endIndent: 14),
+      ],
     );
   }
 
@@ -242,7 +274,8 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          const Divider(height: 1, color: AppColors.borde, indent: 14, endIndent: 14),
+          const Divider(
+              height: 1, color: AppColors.borde, indent: 14, endIndent: 14),
       ],
     );
   }
