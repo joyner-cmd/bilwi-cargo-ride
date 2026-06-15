@@ -38,6 +38,7 @@ dependencies:
 
 dev_dependencies:
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
   flutter_test:
     sdk: flutter
 
@@ -45,3 +46,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+# Genera el icono de la app desde una sola imagen.
+# Correr: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/app_logo.png"
+  min_sdk_android: 21
+  background_color_android: "#FFE5EB"
+  theme_color_android: "#E63E5C"
+  adaptive_icon_background: "#FFE5EB"
+  adaptive_icon_foreground: "assets/images/app_logo.png"
+  remove_alpha_ios: true

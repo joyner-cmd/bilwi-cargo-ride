@@ -8,6 +8,7 @@ class AppTheme {
       seedColor: AppColors.azulCaribe,
       primary: AppColors.azulCaribe,
       secondary: AppColors.turquesa,
+      surface: Colors.white,
       brightness: Brightness.light,
     );
 
@@ -131,9 +132,9 @@ class AppShadows {
     BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, 4)),
   ];
   static const List<BoxShadow> tarjeta = [
-    BoxShadow(color: Color(0x0E0A6EBD), blurRadius: 24, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x14E63E5C), blurRadius: 24, offset: Offset(0, 8)),
   ];
   static const List<BoxShadow> elevada = [
-    BoxShadow(color: Color(0x1A0A6EBD), blurRadius: 30, offset: Offset(0, 12)),
+    BoxShadow(color: Color(0x22E63E5C), blurRadius: 30, offset: Offset(0, 12)),
   ];
 }
