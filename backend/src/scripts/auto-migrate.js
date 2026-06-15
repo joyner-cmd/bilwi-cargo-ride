@@ -1,7 +1,10 @@
 /**
  * Migracion automatica al arrancar el servidor.
- * Solo corre cuando AUTO_MIGRATE=true o cuando existe DATABASE_URL (Railway/Render).
- * Idempotente: usa CREATE/DROP/INSERT que pueden repetirse.
+ * Se activa cuando AUTO_MIGRATE=true o cuando existe DATABASE_URL (Railway/Render).
+ *
+ * - Si la tabla `users` no existe -> aplica schema.sql + seed.sql + cuentas demo.
+ * - Siempre aplica las migraciones incrementales en sql/migrations/*.sql
+ *   (todas son idempotentes: usan IF NOT EXISTS).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -19,28 +22,47 @@ export async function autoMigrate() {
     return;
   }
 
-  console.log('[migrate] verificando esquema...');
-  const { rows } = await pool.query(
-    "SELECT to_regclass('public.users') AS t"
-  );
-  const exists = rows[0]?.t !== null;
-  if (exists) {
-    console.log('[migrate] esquema ya presente, omitido.');
-    return;
+  const { rows } = await pool.query("SELECT to_regclass('public.users') AS t");
+  const hasSchema = rows[0]?.t !== null;
+
+  if (!hasSchema) {
+    console.log('[migrate] base nueva: aplicando schema + seed + cuentas demo...');
+    await pool.query(await fs.readFile(path.join(sqlDir, 'schema.sql'), 'utf8'));
+    await pool.query(await fs.readFile(path.join(sqlDir, 'seed.sql'), 'utf8'));
+    await _seedDemoAccounts();
+  } else {
+    console.log('[migrate] esquema base ya presente.');
   }
 
-  console.log('[migrate] aplicando schema.sql + seed.sql + cuentas demo...');
-  const schema = await fs.readFile(path.join(sqlDir, 'schema.sql'), 'utf8');
-  await pool.query(schema);
+  await _applyIncrementalMigrations();
+  console.log('[migrate] OK.');
+}
 
-  const seed = await fs.readFile(path.join(sqlDir, 'seed.sql'), 'utf8');
-  await pool.query(seed);
+async function _applyIncrementalMigrations() {
+  const dir = path.join(sqlDir, 'migrations');
+  let files = [];
+  try {
+    files = (await fs.readdir(dir)).filter((f) => f.endsWith('.sql')).sort();
+  } catch {
+    return; // no migrations folder
+  }
+  for (const file of files) {
+    const sql = await fs.readFile(path.join(dir, file), 'utf8');
+    try {
+      await pool.query(sql);
+      console.log(`[migrate] aplicada ${file}`);
+    } catch (err) {
+      console.error(`[migrate] error en ${file}:`, err.message);
+    }
+  }
+}
 
+async function _seedDemoAccounts() {
   const pass = await hashPassword('demo1234');
   for (const u of [
-    { role: 'admin', name: 'Admin Bilwi', phone: '+50588880000', email: 'admin@bilwicargo.ni' },
-    { role: 'client', name: 'Cliente Demo', phone: '+50588880001', email: 'cliente@bilwicargo.ni' },
-    { role: 'driver', name: 'Conductor Demo', phone: '+50588880002', email: 'conductor@bilwicargo.ni' },
+    { role: 'admin',  name: 'Admin Bilwi',     phone: '+50588880000', email: 'admin@bilwicargo.ni' },
+    { role: 'client', name: 'Cliente Demo',    phone: '+50588880001', email: 'cliente@bilwicargo.ni' },
+    { role: 'driver', name: 'Conductor Demo',  phone: '+50588880002', email: 'conductor@bilwicargo.ni' },
   ]) {
     await pool.query(
       `INSERT INTO users (role, full_name, phone, email, password_hash, status)
@@ -69,6 +91,4 @@ export async function autoMigrate() {
       [driverId]
     );
   }
-
-  console.log('[migrate] OK. Cuentas demo creadas (clave: demo1234).');
 }
